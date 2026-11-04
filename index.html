@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Astrokurz – souhvězdí</title>
+  <meta name="description" content="Atlas, interaktivní mapa a procvičování souhvězdí zimní a podzimní oblohy (výběr pro AK I).">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b1630'/%3E%3Cpath d='M16 4l2.6 8.2H27l-6.8 5 2.6 8.3L16 20.4l-6.8 5.1 2.6-8.3-6.8-5h8.4z' fill='%23ffd166'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#atlas"><span class="logo">✦</span> Astrokurz <small>souhvězdí zimní a podzimní oblohy</small></a>
+    <nav class="tabs" role="tablist">
+      <button class="tab" data-tab="atlas">Atlas</button>
+      <button class="tab" data-tab="mapa">Mapa oblohy</button>
+      <button class="tab" data-tab="kviz">Procvičování</button>
+      <button class="tab" data-tab="tabulka">Tabulky</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- ============================================================ ATLAS -->
+    <section id="tab-atlas" class="page">
+      <div class="intro">
+        <div>
+          <h1>Jak souhvězdí vypadají</h1>
+          <p>Každé souhvězdí z tabulek má svou kartu: tvar (čáry), hvězdy s názvy, objekty a hlavně <b>jak ho na obloze najít</b>.
+             Barvy jako v tabulkách: <span class="ecl">ekliptikální červeně</span>, <span class="circ">cirkumpolární modře</span>,
+             <span class="poly">★ = součást zimního mnohoúhelníku</span>.</p>
+          <ol class="howto">
+            <li>Projdi si karty a čti „Jak najít“ – na testu se hledá od nápadných útvarů (Orion, Pegasův čtverec, Kasiopeja).</li>
+            <li>V <a href="#mapa">mapě oblohy</a> vypni ve „Vrstvách“ názvy a zkoušej hvězdy poznávat bez nápovědy – kliknutím si to ověříš.</li>
+            <li>V <a href="#kviz">procvičování</a> se tě „učitel“ ptá: ukáže na hvězdu, souhvězdí nebo objekt a ty odpovídáš.</li>
+          </ol>
+        </div>
+        <div class="filter" id="atlas-filter">
+          <button data-season="all" class="pill active">Vše</button>
+          <button data-season="zima" class="pill">Zima</button>
+          <button data-season="podzim" class="pill">Podzim</button>
+        </div>
+      </div>
+      <div id="atlas-root"></div>
+      <footer class="credits">
+        Polohy hvězd: katalog Hipparcos / Yale Bright Star Catalogue, čáry souhvězdí a hranice
+        z projektu <a href="https://github.com/ofrohn/d3-celestial" target="_blank" rel="noopener">d3-celestial</a> (Olaf Frohn, BSD licence).
+        Obsah podle tabulek „Souhvězdí zimní/podzimní oblohy – výběr pro AK I“.
+      </footer>
+    </section>
+
+    <!-- ============================================================ MAPA -->
+    <section id="tab-mapa" class="page page-full">
+      <div class="toolbar">
+        <div class="group">
+          <button class="pill" data-preset="zima">Zimní obloha</button>
+          <button class="pill" data-preset="podzim">Podzimní obloha</button>
+          <button class="pill" data-preset="sever">Kolem Polárky</button>
+        </div>
+        <div class="group">
+          <button class="pill seg active" data-mode="eq" title="Hvězdná mapa – sever nahoře, východ vlevo">Mapa</button>
+          <button class="pill seg" data-mode="hor" title="Obloha nad obzorem, jak ji vidíš z Prahy">Nad obzorem</button>
+        </div>
+        <div class="group time-group" id="time-group" hidden>
+          <input type="date" id="map-date" aria-label="Datum">
+          <input type="range" id="map-time" min="0" max="1439" step="10" aria-label="Čas">
+          <output id="map-time-out">21:00</output>
+          <button class="pill" id="map-now">Teď</button>
+        </div>
+        <div class="group search">
+          <input id="map-search" list="search-list" placeholder="Hledat (Algol, Orion, M31…)" autocomplete="off">
+          <datalist id="search-list"></datalist>
+        </div>
+        <details class="group layers">
+          <summary class="pill">Vrstvy ▾</summary>
+          <div class="layer-list" id="layer-list"></div>
+        </details>
+      </div>
+      <div class="map-wrap">
+        <canvas id="map-canvas" aria-label="Mapa hvězdné oblohy"></canvas>
+        <div class="map-ctrl">
+          <button id="zoom-in" title="Přiblížit">+</button>
+          <button id="zoom-out" title="Oddálit">−</button>
+          <button id="rot-left" title="Natočit">⟲</button>
+          <button id="rot-right" title="Natočit">⟳</button>
+        </div>
+        <div class="tooltip" id="map-tip" hidden></div>
+        <div class="info" id="map-info" hidden></div>
+        <div class="map-hint">Táhni = posun · kolečko / dva prsty = zoom · klikni na hvězdu nebo souhvězdí</div>
+      </div>
+    </section>
+
+    <!-- ============================================================ KVÍZ -->
+    <section id="tab-kviz" class="page">
+      <div id="quiz-setup" class="quiz-setup">
+        <h1>Procvičování jako na testu</h1>
+        <p class="lead">Na mapě se objeví ukazovátko – stejně jako když učitel ukáže na projekci. Odpověz, co to je.</p>
+        <div class="setup-grid">
+          <fieldset>
+            <legend>Období</legend>
+            <label><input type="checkbox" name="season" value="zima" checked> Zimní obloha</label>
+            <label><input type="checkbox" name="season" value="podzim" checked> Podzimní obloha</label>
+          </fieldset>
+          <fieldset>
+            <legend>Co se mě ptát</legend>
+            <label><input type="checkbox" name="qtype" value="pointStar" checked> Ukázaná hvězda → název a souhvězdí</label>
+            <label><input type="checkbox" name="qtype" value="pointCon" checked> Ukázané souhvězdí → název</label>
+            <label><input type="checkbox" name="qtype" value="pointObj" checked> Ukázaný objekt / útvar → název a typ</label>
+            <label><input type="checkbox" name="qtype" value="find"> Najdi a klikni na mapě</label>
+            <label><input type="checkbox" name="qtype" value="table"> Tabulka: latinsky, genitiv, zkratka…</label>
+          </fieldset>
+          <fieldset>
+            <legend>Odpovídání</legend>
+            <label><input type="radio" name="answer" value="choice" checked> Výběr ze 4 možností</label>
+            <label><input type="radio" name="answer" value="typed"> Psaní odpovědi (těžší)</label>
+            <legend class="sub">Počet otázek</legend>
+            <div class="count">
+              <label><input type="radio" name="count" value="10"> 10</label>
+              <label><input type="radio" name="count" value="20" checked> 20</label>
+              <label><input type="radio" name="count" value="40"> 40</label>
+              <label><input type="radio" name="count" value="0"> ∞</label>
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>Projekce</legend>
+            <label><input type="checkbox" name="lines" checked> Čáry souhvězdí</label>
+            <label><input type="checkbox" name="rotate"> Náhodně natočená obloha</label>
+            <label><input type="checkbox" name="horizon"> Pohled nad obzorem (jako v planetáriu)</label>
+            <label><input type="checkbox" name="milkyway" checked> Mléčná dráha</label>
+            <label><input type="checkbox" name="extra"> Navíc i další jasné hvězdy (Markab, Bellatrix…)</label>
+          </fieldset>
+        </div>
+        <div class="setup-actions">
+          <button class="btn primary" id="quiz-start">Začít procvičovat</button>
+          <button class="btn" id="quiz-retry" hidden>Opakovat moje chyby</button>
+        </div>
+        <div class="mastery">
+          <div class="mastery-head">
+            <h2>Co už umím</h2>
+            <button class="link" id="stats-reset">vymazat statistiku</button>
+          </div>
+          <p class="muted">Zelená = většinou správně, červená = častěji špatně. Slabší položky se v procvičování objevují častěji.</p>
+          <div id="mastery"></div>
+        </div>
+      </div>
+
+      <div id="quiz-run" class="quiz-run" hidden>
+        <div class="quiz-map">
+          <canvas id="quiz-canvas" aria-label="Mapa k otázce"></canvas>
+          <div class="bigcard" id="q-bigcard" hidden></div>
+          <div class="quiz-map-ctrl">
+            <label><input type="checkbox" id="q-lines"> čáry</label>
+            <label><input type="checkbox" id="q-labels"> popisky</label>
+          </div>
+        </div>
+        <aside class="quiz-panel">
+          <div class="q-head">
+            <span id="q-progress"></span>
+            <span id="q-score"></span>
+            <button class="link" id="q-quit">ukončit</button>
+          </div>
+          <div class="q-prompt" id="q-prompt"></div>
+          <div id="q-parts"></div>
+          <div class="q-feedback" id="q-feedback"></div>
+          <div class="q-actions">
+            <button class="btn" id="q-dunno">Nevím</button>
+            <button class="btn primary" id="q-check">Zkontrolovat</button>
+            <button class="btn primary" id="q-next" hidden>Další →</button>
+          </div>
+          <p class="muted small">Enter = zkontrolovat / další otázka</p>
+        </aside>
+      </div>
+
+      <div id="quiz-end" class="quiz-end" hidden></div>
+    </section>
+
+    <!-- ============================================================ TABULKY -->
+    <section id="tab-tabulka" class="page">
+      <h1>Tabulky z kurzu</h1>
+      <p class="lead">Zakryj si sloupec a zkoušej se: kliknutím na zakrytou buňku ji odkryješ. Kliknutím na název souhvězdí ho otevřeš v atlasu.</p>
+      <div class="cover" id="cover"></div>
+      <div id="tables"></div>
+    </section>
+  </main>
+
+  <script src="data/sky-data.js"></script>
+  <script src="data/course.js"></script>
+  <script src="js/sky.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
